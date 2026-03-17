@@ -6,7 +6,7 @@ Separate order index enables O(1) cancel by order_id.
 """
 
 from sortedcontainers import SortedDict
-from typing import Dict, Optional
+from typing import Dict, Optional, List, Tuple
 from .models import Order, OrderSide
 from collections import deque
 
@@ -37,5 +37,23 @@ class OrderBook:
         if not price_level:
             book.pop(order.price)
         return order
+    
+    def best_ask(self) -> Optional[float]:
+        if not self._asks:
+            return None
+        return next(iter(self._asks))
+
+    def best_bid(self) -> Optional[float]:
+        if not self._bids:
+            return None
+        return next(iter(self._bids))
+    
+    def get_order(self, order_id: str) -> Optional[Order]:
+        return self._orders.get(order_id)
+    
+    def depth(self, levels: int = 5) -> Tuple[List, List]:
+        bids = [(price, sum(item.remaining_quantity for item in d_queue)) for price, d_queue in list(self._bids.items())[:levels]]
+        asks = [(price, sum(item.remaining_quantity for item in d_queue)) for price, d_queue in list(self._asks.items())[:levels]]
+        return (bids, asks)
 
 
