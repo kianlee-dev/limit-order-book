@@ -27,6 +27,8 @@ class Order:
     timestamp: int = field(default_factory=lambda: time.perf_counter_ns())  # nanosecond precision for latency benchmarking
     filled_quantity: int = 0
     status: OrderStatus = OrderStatus.OPEN # default is OPEN
+    ioc: bool = False
+    fok: bool = False
     @property
     def remaining_quantity(self) -> int:
         # avoids recomputing quantity - filled_quantity at every callsite
