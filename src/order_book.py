@@ -6,7 +6,7 @@ Separate order index enables O(1) cancel by order_id.
 """
 
 from sortedcontainers import SortedDict
-from typing import Dict
+from typing import Dict, Optional
 from .models import Order, OrderSide
 from collections import deque
 
@@ -25,3 +25,17 @@ class OrderBook:
             book[order.price] = deque() # initialise first seen price level
         book[order.price].append(order)
         self._orders[order.order_id] = order # flat index reference for O(1) cancel operation
+    
+    def cancel_order(self, order_id: str) -> Optional[Order]:
+        if order_id not in self._orders:
+            return None
+        order = self._orders.pop(order_id)
+        book = self._asks if order.side == OrderSide.ASK else self._bids
+        price_level = book[order.price]
+        price_level.remove(order)
+        # clean up empty price level, prevents stale levels polluting depth and BBO queries
+        if not price_level:
+            book.pop(order.price)
+        return order
+
+
