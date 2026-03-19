@@ -1,3 +1,40 @@
+# Limit Order Book
+
+A price-time priority matching engine implementing limit orders, market orders, IOC/FOK, and a pub/sub event system. Built to demonstrate data structure selection, performance measurement, and financial systems domain knowledge.
+
+## Project Structure
+```
+limit-order-book/
+├── src/
+│   ├── models.py          # Data contracts — Order, Fill, enums
+│   ├── order_book.py      # Data structure — storage, insert, cancel, query
+│   ├── matching_engine.py # Business logic — matching algorithm
+│   └── events.py          # Pub/sub event bus
+├── tests/
+│   └── test_matching.py   # 12 tests, written before engine
+├── benchmarks/
+│   └── bench.py           # Throughput and latency benchmarks
+├── examples/
+│   └── replay.py          # CSV replay demo
+└── requirements.txt
+```
+
+## Architecture
+```
+Orders
+  │
+  ▼
+MatchingEngine          EventBus
+  │    └─────────────────────┤
+  │                          │ publishes fills
+  ▼                          │
+OrderBook              subscribers
+  │                    (callbacks)
+  ▼
+Models
+(Order, Fill, Enums)
+```
+
 ## Benchmark Results
 
 | Operation | Throughput | p50 | p99 | p999 |
