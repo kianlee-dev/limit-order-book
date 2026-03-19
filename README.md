@@ -35,6 +35,38 @@ Models
 (Order, Fill, Enums)
 ```
 
+## Single Responsibility
+
+| File | Responsibility | Justification |
+|------|---------------|---------------|
+| `models.py` | Data contracts only | Zero logic — prevents circular dependencies |
+| `order_book.py` | Storage and indexing | Book integrity testable independently of matching |
+| `matching_engine.py` | Matching algorithm | Can swap book implementation without touching algorithm |
+| `events.py` | Pub/sub event bus | Engine publishes fills without knowing who listens |
+
+## Design Decisions
+
+**SortedDict for price levels, not a regular dict**
+Regular dict has O(1) lookup but no ordering. Matching requires iterating from best to worst price. SortedDict from sortedcontainers gives O(log n) insert and O(1) access to min/max — exactly the access pattern a matching engine needs.
+
+**Deque per price level, not a list**
+Time priority requires FIFO within each price level. deque gives O(1) append and O(1) popleft. A list gives O(n) popleft because it shifts all elements. On a hot path processing millions of orders that difference compounds.
+
+**Separate order index for O(1) cancel**
+A flat dict keyed by order_id maps directly to the Order object. Cancel is O(1) lookup, then removal from the price level deque. Without this index, cancel would require scanning every price level.
+
+**OrderBook separated from MatchingEngine**
+OrderBook is a data structure problem — maintaining state correctly. MatchingEngine is a business logic problem — the matching algorithm. Separating them means book integrity is testable independently of matching logic, and the book implementation can be swapped without touching the algorithm.
+
+**Event bus instead of direct callbacks**
+The engine publishes fills without knowing who is listening. A risk system, logger, or P&L calculator can subscribe without any changes to the engine. This mirrors real OMS architecture where the matching engine is decoupled from downstream consumers.
+
+**IOC and FOK as proper dataclass fields**
+`ioc: bool = False` and `fok: bool = False` are declared directly on the Order dataclass rather than using `getattr` workarounds.
+
+**`remaining_quantity` as a computed property**
+`quantity - filled_quantity` is computed in one place on the Order dataclass rather than repeated at every callsite in the match loop. Eliminates a class of bugs where the calculation could be written differently in different places.
+
 ## Benchmark Results
 
 | Operation | Throughput | p50 | p99 | p999 |
