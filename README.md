@@ -85,6 +85,32 @@ The engine publishes fills without knowing who is listening. A risk system, logg
 - **FOK (Fill or Kill)** — fills the entire quantity or cancels entirely, nothing partial
 - **Cancel** — removes a resting order from the book in O(1)
 
+## Test Coverage
+
+12 tests, all passing. Written before the matching engine — test-driven development.
+
+**Core behaviour**
+
+| Test | What it verifies |
+|------|-----------------|
+| `test_time_priority` | First order at a price level fills before later orders at the same price |
+| `test_partial_fill` | Order remains open with correct filled_quantity after partial match |
+| `test_full_fill_clears_book` | Fully filled order is removed from the book |
+| `test_price_priority` | Best priced order fills before worse priced order |
+
+**Edge cases**
+
+| Test | What it verifies |
+|------|-----------------|
+| `test_cancel_non_existent` | Cancelling an unknown order_id returns None safely |
+| `test_market_order_empty_book` | Market order on empty book returns no fills |
+| `test_ioc_unfilled_cancelled` | IOC remainder is cancelled after partial fill |
+| `test_fok_cancelled_if_unfillable` | FOK order is killed entirely if full quantity unavailable |
+| `test_fok_fills_if_fully_fillable` | FOK order fills completely when liquidity is sufficient |
+| `test_ioc_full_fill` | IOC order that fills completely leaves no resting order |
+| `test_price_no_match` | Limit orders with no crossing price rest in book without matching |
+| `test_market_order_walks_levels` | Market order consumes multiple price levels until filled |
+
 ## Benchmark Results
 
 | Operation | Throughput | p50 | p99 | p999 |
