@@ -1,10 +1,15 @@
-from typing import List, Optional
+from typing import List, Optional, Callable
 from .order_book import OrderBook
 from .models import Order, Fill, OrderType, OrderStatus, OrderSide
+from .events import EventBus, EventType
 
 class MatchingEngine:
     def __init__(self):
         self.book = OrderBook()
+        self._event_bus = EventBus()
+
+    def on_fill(self, callback: Callable) -> None:
+        self._event_bus.subscribe(EventType.ORDER_FILLED, callback)
 
     def submit_order(self, order: Order) -> List[Fill]:
         if order.order_type == OrderType.LIMIT:
@@ -74,6 +79,9 @@ class MatchingEngine:
             quantity=trade_quantity
             )
             fills.append(fill)
+
+            # notify subscribers — decouples engine from downstream consumers
+            self._event_bus.publish(EventType.ORDER_FILLED, fill)
 
             # Remove fully filled passive order
             if passive.status == OrderStatus.FILLED:
