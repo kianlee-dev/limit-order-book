@@ -32,6 +32,8 @@ class MatchingEngine:
                 if order.side == OrderSide.ASK and price < order.price:
                     break
                 available += sum(o.remaining_quantity for o in queue)
+                if available >= order.quantity:
+                    break
             if available < order.quantity:
                 return []
             
