@@ -128,3 +128,38 @@ The engine publishes fills without knowing who is listening. A risk system, logg
 The results reflect the mechanical cost of each operation through the engine. Cancel is the fastest at 3.6M ops/sec — it is a pure O(1) hashmap lookup with no matching logic or object creation. Limit insert is second at 1.2M ops/sec, requiring only a SortedDict insertion with no fill computation. Limit and market order match are slower at ~480k and ~433k ops/sec respectively, as both run the full match loop, construct Fill objects, and publish events through the event bus. Multi-level market order match is the slowest at 93k ops/sec — each order walks 5 price levels, multiplying match loop iterations 5x compared to single-level market match, which is reflected in the p999 jumping to 39,875 ns.
 
 These numbers reflect Python interpreter overhead rather than the hardware's true ceiling. The GIL prevents parallel order processing, and Python object allocation adds latency that a C++ implementation would eliminate entirely. Production matching engines in high-frequency trading operate in the tens of nanoseconds range using lock-free data structures and cache-optimised memory layouts. Additionally, this engine is single-threaded by design — introducing multi-threaded order ingestion without proper synchronisation would introduce race conditions on shared book state, requiring either a mutex around the matching critical section or a lock-free SPSC ring buffer for order ingestion to maintain correctness under concurrency.
+
+## How to Run
+
+**Build the image**
+```bash
+docker build -t limit-order-book .
+```
+
+**Run tests**
+```bash
+docker run -v $(pwd):/app limit-order-book pytest tests/ -v
+```
+
+**Run replay demo**
+```bash
+docker run -v $(pwd):/app limit-order-book python examples/replay.py
+```
+
+**Run benchmarks**
+```bash
+docker run -v $(pwd):/app limit-order-book python benchmarks/bench.py
+```
+
+## Limitations and Future Work
+
+**Current limitations**
+- Python GIL prevents true multi-threaded order processing
+- No persistent storage — order state lives in memory only
+- Benchmark numbers reflect Python overhead, not hardware limits
+
+**Natural next steps**
+- Port matching engine core to C++ for sub-microsecond latency
+- Add lock-free SPSC ring buffer for order ingestion
+- Implement ITCH 5.0 protocol parser for real exchange feed consumption
+- Thread-pinning and CPU affinity for deterministic latency
