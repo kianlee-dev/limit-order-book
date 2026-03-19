@@ -67,6 +67,24 @@ The engine publishes fills without knowing who is listening. A risk system, logg
 **`remaining_quantity` as a computed property**
 `quantity - filled_quantity` is computed in one place on the Order dataclass rather than repeated at every callsite in the match loop. Eliminates a class of bugs where the calculation could be written differently in different places.
 
+## Data Structure Complexity
+
+| Operation | Structure | Complexity | Reason |
+|-----------|-----------|------------|--------|
+| Limit order insert | SortedDict | O(log n) | Tree-based insertion |
+| Cancel order | dict[order_id] | O(1) | Direct hashmap lookup |
+| Best bid/ask | SortedDict first key | O(1) | Sorted structure, first element |
+| Price level traversal | SortedDict iteration | O(log n) | Tree-based iteration |
+| Time priority | deque per price level | O(1) | FIFO append/popleft |
+
+## Order Types Supported
+
+- **Limit** — rests in the book at a specified price if not immediately matchable
+- **Market** — executes immediately at the best available price, walks price levels
+- **IOC (Immediate or Cancel)** — fills whatever is available, cancels the remainder
+- **FOK (Fill or Kill)** — fills the entire quantity or cancels entirely, nothing partial
+- **Cancel** — removes a resting order from the book in O(1)
+
 ## Benchmark Results
 
 | Operation | Throughput | p50 | p99 | p999 |
