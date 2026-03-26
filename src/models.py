@@ -24,7 +24,6 @@ class Order:
     order_type: OrderType
     price: Optional[float] # could be none for market orders, they have no specific prices
     quantity: int
-    timestamp: int = field(default_factory=lambda: time.perf_counter_ns())  # nanosecond precision for latency benchmarking
     filled_quantity: int = 0
     status: OrderStatus = OrderStatus.OPEN # default is OPEN
     ioc: bool = False
@@ -40,4 +39,4 @@ class Fill:
     passive_order_id:str # resting order that was already in the book
     price: float # always the passive order's price
     quantity: int
-    timestamp: int = field(default_factory=lambda: time.perf_counter_ns())
+    timestamp: int = field(default_factory=lambda: time.time_ns())

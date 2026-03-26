@@ -1,4 +1,5 @@
 import csv, sys
+from datetime import datetime
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -16,7 +17,7 @@ def replay(filepath: str):
     T=1011:      market order walking three price levels
     """
     engine = MatchingEngine()
-    engine.on_fill(lambda f: print(f" FILL: {f.aggressor_order_id} x {f.passive_order_id} " f"@ {f.price} qty={f.quantity}"))
+    engine.on_fill(lambda f: print(f" FILL: {f.aggressor_order_id} x {f.passive_order_id} " f"@ {f.price} qty={f.quantity} time = {datetime.utcfromtimestamp(f.timestamp / 1e9).strftime('%H:%M:%S.%f')}"))
 
     with open(filepath) as f:
         for row in csv.DictReader(f):
